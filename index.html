@@ -1,0 +1,246 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Bati na tayo please?</title>
+
+<style>
+* { box-sizing: border-box; }
+
+body {
+    margin: 0;
+    font-family: 'Segoe UI', sans-serif;
+    height: 100vh;
+    overflow: hidden;
+    background: linear-gradient(135deg, #ffd6e7, #fff);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+}
+
+/* MAIN CARD */
+.card {
+    background: white;
+    padding: 40px;
+    border-radius: 20px;
+    text-align: center;
+    box-shadow: 0 15px 40px rgba(0,0,0,0.15);
+    width: min(420px, 90%);
+    transition: opacity .35s ease, transform .35s ease;
+}
+
+.card.hide {
+    opacity: 0;
+    transform: scale(0.96);
+    pointer-events: none;
+}
+
+/* After it fades, fully remove from layout */
+.card.gone { display: none; }
+
+h1 {
+    font-size: 26px;
+    margin: 0 0 20px;
+}
+
+button {
+    padding: 12px 25px;
+    border: none;
+    border-radius: 50px;
+    font-size: 16px;
+    font-weight: bold;
+    cursor: pointer;
+    margin: 10px;
+    transform-origin: center;
+}
+
+/* YES button */
+#yesBtn {
+    background: #ff4da6;
+    color: white;
+    animation: bounce 1.5s infinite;
+    transition: transform .18s ease;
+}
+
+/* NO button */
+#noBtn {
+    background: #555;
+    color: white;
+    position: relative; /* becomes fixed after first click */
+}
+
+/* YES bounce */
+@keyframes bounce {
+    0%,100% { transform: translateY(0); }
+    50% { transform: translateY(-6px); }
+}
+
+/* OVERLAY */
+.overlay {
+    position: fixed;
+    inset: 0;
+    display: none;
+    z-index: 10;
+}
+
+.overlay.show { display: block; }
+
+.bg {
+    position: absolute;
+    inset: 0;
+    background: url("background.jpg") center/cover no-repeat;
+    filter: brightness(0.6);
+}
+
+.content {
+    position: relative;
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    padding: 14px;
+}
+
+.msg {
+    background: rgba(0,0,0,0.6);
+    color: white;
+    padding: 18px 18px;
+    border-radius: 20px;
+    width: min(820px, 92vw);
+    text-align: center;
+    font-size: 18px;
+    margin-bottom: 16px;
+    min-height: 84px;
+}
+
+video {
+    width: min(820px, 92vw);
+    max-height: 55vh;
+    border-radius: 20px;
+}
+
+/* Falling hearts */
+.fallHeart {
+    position: fixed;
+    top: -12px;
+    font-size: 22px;
+    animation: fall linear forwards;
+    pointer-events: none;
+    z-index: 999;
+}
+
+@keyframes fall {
+    to { transform: translateY(110vh); opacity: 0; }
+}
+</style>
+</head>
+
+<body>
+
+<div class="card" id="questionCard">
+    <h1>Bati na tayo please?</h1>
+    <button id="yesBtn">Yes 🥺</button>
+    <button id="noBtn">No 😢</button>
+</div>
+
+<audio id="bgMusic" loop>
+    <source src="music.mp3" type="audio/mpeg">
+</audio>
+
+<div class="overlay" id="overlay">
+    <div class="bg"></div>
+    <div class="content">
+        <div class="msg" id="typedText"></div>
+        <video id="vid" controls playsinline>
+            <source src="video.mp4" type="video/mp4">
+        </video>
+    </div>
+</div>
+
+<script>
+const yesBtn = document.getElementById("yesBtn");
+const noBtn = document.getElementById("noBtn");
+const overlay = document.getElementById("overlay");
+const vid = document.getElementById("vid");
+const music = document.getElementById("bgMusic");
+const typedText = document.getElementById("typedText");
+const card = document.getElementById("questionCard");
+
+let yesScale = 1;           // YES grows when NO is clicked
+let heartsTimer = null;     // avoid multiple intervals
+
+/* NO button dodges but stays visible + YES gets bigger */
+noBtn.addEventListener("click", () => {
+    // Grow YES button each time she tries NO
+    yesScale = Math.min(yesScale + 0.18, 2.4); // cap so it doesn't get too huge
+    yesBtn.style.transform = `scale(${yesScale})`;
+
+    // Dodge NO to a random position (still visible)
+    const padding = 20;
+    noBtn.style.position = "fixed";
+    noBtn.style.zIndex = "20";
+
+    const maxX = Math.max(padding, window.innerWidth - noBtn.offsetWidth - padding);
+    const maxY = Math.max(padding, window.innerHeight - noBtn.offsetHeight - padding);
+
+    const x = Math.floor(Math.random() * (maxX - padding + 1)) + padding;
+    const y = Math.floor(Math.random() * (maxY - padding + 1)) + padding;
+
+    noBtn.style.left = x + "px";
+    noBtn.style.top = y + "px";
+});
+
+/* Typing Effect */
+function typeMessage(text, i = 0) {
+    if (i < text.length) {
+        typedText.innerHTML += text.charAt(i);
+        setTimeout(() => typeMessage(text, i + 1), 40);
+    }
+}
+
+/* Falling hearts after YES */
+function startFallingHearts() {
+    if (heartsTimer) return; // already running
+    heartsTimer = setInterval(() => {
+        const heart = document.createElement("div");
+        heart.classList.add("fallHeart");
+        heart.innerHTML = "💖";
+        heart.style.left = Math.random() * 100 + "vw";
+        heart.style.animationDuration = (3 + Math.random() * 3) + "s";
+        document.body.appendChild(heart);
+        setTimeout(() => heart.remove(), 6500);
+    }, 260);
+}
+
+/* Try fullscreen on phone (best effort) */
+function openFullscreen() {
+    const el = document.documentElement;
+    if (el.requestFullscreen) el.requestFullscreen().catch(()=>{});
+    else if (el.webkitRequestFullscreen) el.webkitRequestFullscreen();
+}
+
+/* YES CLICK */
+yesBtn.addEventListener("click", async () => {
+    // Hide the "Bati na tayo please?" card
+    card.classList.add("hide");
+    setTimeout(() => card.classList.add("gone"), 380);
+
+    overlay.classList.add("show");
+
+    const message =
+      "Thank you soo much mal 🥺🥺 miss na miss na kita bati na us ha smile kana po mal 🥺🥺 Iloveyouusoomuchhh 💖";
+    typedText.innerHTML = "";
+    typeMessage(message);
+
+    startFallingHearts();
+    openFullscreen();
+
+    try { music.currentTime = 0; await music.play(); } catch(e) {}
+    try { vid.currentTime = 0; await vid.play(); } catch(e) {}
+});
+</script>
+
+</body>
+</html>
